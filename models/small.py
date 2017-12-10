@@ -45,6 +45,64 @@ class c3f2(chainer.Chain):
             return self.pred
 
 
+class C5(chainer.Chain):
+    def __init__(self):
+        super(C5, self).__init__(
+            conv1=L.Convolution2D(None, 32, 3, pad=1),
+            conv2=L.Convolution2D(None, 64, 3, pad=1),
+            conv3=L.Convolution2D(None, 128, 3, pad=1),
+            conv4=L.Convolution2D(None, 256, 3, pad=1),
+            conv5=L.Convolution2D(None, 512, 3, pad=1),
+            bn1=L.BatchNormalization(32),
+            bn2=L.BatchNormalization(32),
+            bn3=L.BatchNormalization(64),
+            bn4=L.BatchNormalization(128),
+            bn5=L.BatchNormalization(256),
+            fc=L.Linear(512, 10),
+        )
+
+    def get_feature(self, x):
+        h = F.relu(self.bn1(self.conv1(x)))
+        h = self.conv2(F.relu(self.bn2(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv3(F.relu(self.bn3(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv4(F.relu(self.bn4(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv5(F.relu(self.bn5(h)))
+        h = F.average_pooling_2d(h, 4)
+        pred = self.fc(h)
+        return F.squeeze(h, axis=(2, 3)), pred
+
+    def __call__(self, x, t, train=True):
+        h = F.relu(self.bn1(self.conv1(x)))
+        h = self.conv2(F.relu(self.bn2(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv3(F.relu(self.bn3(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv4(F.relu(self.bn4(h)))
+        h = F.max_pooling_2d(h, 2)
+        h = F.dropout(h, 0.25)
+        h = self.conv5(F.relu(self.bn5(h)))
+        h = F.average_pooling_2d(h, 4)
+        h = self.fc(h)
+
+        self.pred = h
+        self.loss = F.softmax_cross_entropy(h, t)
+        self.accuracy = F.accuracy(h, t)
+
+        if train:
+            return self.loss
+        else:
+            self.pred = F.softmax(h)
+            return self.pred
+
+
 class fconv(chainer.Chain):
     def __init__(self):
         super(fconv, self).__init__(

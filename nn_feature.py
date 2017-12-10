@@ -31,7 +31,7 @@ logger = MLLogger()
 
 def get_color_map_nipy(gradation_num):
     colors = []
-    for idx in [x*255/gradation_num for x in xrange(gradation_num)]:
+    for idx in [int(x*255/gradation_num) for x in xrange(gradation_num)]:
         colors.append(plt.cm.nipy_spectral(idx)[0:3])
     return (np.array(colors)[::-1,(2,1,0)]*255).astype(np.int)
 
@@ -115,7 +115,7 @@ if __name__ == "__main__":
     chainer.config.enable_backprop = False
     for im in data:
         x = Variable(cuda.to_gpu(im[np.newaxis, ...], args.gpu))
-        predictions.append(model.get_feature(x).data)
+        predictions.append(model.get_feature(x)[0].data)
     predictions = np.array([cuda.to_cpu(x) for x in predictions])
 
     nn = NearestNeighbors(n_neighbors=args.nb_neighbors, algorithm="ball_tree", n_jobs=args.nn_jobs)
