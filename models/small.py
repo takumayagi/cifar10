@@ -61,7 +61,7 @@ class C5(chainer.Chain):
             fc=L.Linear(512, 10),
         )
 
-    def get_feature(self, x):
+    def get_feature(self, x, fc=True):
         h = F.relu(self.bn1(self.conv1(x)))
         h = self.conv2(F.relu(self.bn2(h)))
         h = F.max_pooling_2d(h, 2)
@@ -75,9 +75,12 @@ class C5(chainer.Chain):
         h = self.conv5(F.relu(self.bn5(h)))
         h = F.average_pooling_2d(h, 4)
         pred = self.fc(h)
-        return F.squeeze(h, axis=(2, 3)), pred
+        if fc:
+            return F.squeeze(h, axis=(2, 3)), pred
+        else:
+            return pred
 
-    def __call__(self, x, t, train=True):
+    def __call__(self, x, t=None):
         h = F.relu(self.bn1(self.conv1(x)))
         h = self.conv2(F.relu(self.bn2(h)))
         h = F.max_pooling_2d(h, 2)
@@ -91,12 +94,9 @@ class C5(chainer.Chain):
         h = self.conv5(F.relu(self.bn5(h)))
         h = F.average_pooling_2d(h, 4)
         h = self.fc(h)
-
-        self.pred = h
-        self.loss = F.softmax_cross_entropy(h, t)
-        self.accuracy = F.accuracy(h, t)
-
-        if train:
+        if t is not None:
+            self.loss = F.softmax_cross_entropy(h, t)
+            self.accuracy = F.accuracy(h, t)
             return self.loss
         else:
             self.pred = F.softmax(h)
